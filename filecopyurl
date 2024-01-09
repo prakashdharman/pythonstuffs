@@ -3,7 +3,7 @@
 """
 Lookup File Transfer Script
 Version: 1.0
-Author: Your Name
+Author: Toreppy
 """
 
 import requests
