@@ -1,0 +1,124 @@
+import requests
+import subprocess
+import logging
+
+class LookupFileTransfer:
+    def __init__(self, proxy=None):
+        self.proxy = proxy
+        self.url_anonymous = "https://i"
+        self.url_tor = "https://i"
+        self.scp_host = 'your_scp_host'
+        self.scp_port = 22
+        self.scp_username = 'your_scp_username'
+        self.scp_private_key_path = '/path/to/your/private/key.pem'
+        self.remote_path = '/path/on/remote/server/firehol_lookup.csv'
+        self.sudo_password = 'your_sudo_password'
+
+        # Configure logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
+
+    def fetch_data(self, url):
+        self.logger.info(f"Fetching data from {url}")
+        response = requests.get(url, proxies=self.proxy)
+        if response.status_code == 200:
+            return response.text.splitlines()
+        else:
+            self.logger.error(f"Error fetching data from {url}")
+            return []
+
+    def create_lookup_file(self, anonymous_data, tor_data):
+        self.logger.info("Creating lookup file")
+        combined_data = set(anonymous_data + tor_data)
+        with open("firehol_lookup.csv", "w") as lookup_file:
+            lookup_file.write("ip_address\n")
+            for ip in combined_data:
+                lookup_file.write(f"{ip}\n")
+        self.logger.info("Lookup file created successfully.")
+
+    def scp_transfer_with_sudo(self, local_file):
+        self.logger.info(f"Initiating SCP transfer with sudo to {self.scp_host}:{self.remote_path}")
+        scp_command = [
+            'scp',
+            '-i', self.scp_private_key_path,
+            '-P', str(self.scp_port),
+            local_file,
+            f'{self.scp_username}@{self.scp_host}:{self.remote_path}'
+        ]
+
+        sudo_command = [
+            'ssh',
+            '-i', self.scp_private_key_path,
+            '-p', str(self.scp_port),
+            f'{self.scp_username}@{self.scp_host}',
+            f'sudo cp /dev/stdin {self.remote_path}'
+        ]
+
+        try:
+            with subprocess.Popen(scp_command, stdin=subprocess.PIPE) as scp_proc:
+                sudo_proc = subprocess.Popen(sudo_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                sudo_output, _ = sudo_proc.communicate(input=f'{self.sudo_password}\n'.encode())
+                with open(local_file, 'rb') as file:
+                    scp_proc.communicate(input=file.read())
+
+            self.logger.info(f"File {local_file} successfully transferred to {self.scp_host}:{self.remote_path} with sudo")
+        except Exception as e:
+            self.logger.error(f"Error during SCP transfer with sudo: {e}")
+
+    def run(self):
+        # Fetch data from URLs
+        anonymous_data = self.fetch_data(self.url_anonymous)
+        tor_data = self.fetch_data(self.url_tor)
+
+        # Create lookup file
+        self.create_lookup_file(anonymous_data, tor_data)
+
+        # SCP transfer the lookup file to the remote server with sudo access using subprocess
+        self.scp_transfer_with_sudo("firehol_lookup.csv")
+        self.logger.info("Lookup file transferred successfully with sudo access.")
+
+# Usage
+lookup_transfer = LookupFileTransfer(proxy={'http': 'http://your_proxy_url', 'https': 'https://your_proxy_url'})
+lookup_transfer.run()
+
+# ... (previous code remains unchanged)
+
+class LookupFileTransfer:
+    # ... (previous code remains unchanged)
+
+    def scp_transfer_with_sudo(self, local_file):
+        self.logger.info(f"Initiating SCP transfer with sudo to {self.scp_host}:{self.remote_path}")
+        scp_command = [
+            'scp',
+            '-i', self.scp_private_key_path,
+            '-P', str(self.scp_port),
+            local_file,
+            f'{self.scp_username}@{self.scp_host}:{self.remote_path}'
+        ]
+
+        # Specify the target user for the sudo command
+        sudo_target_user = 'your_target_user'
+        sudo_command = [
+            'ssh',
+            '-i', self.scp_private_key_path,
+            '-p', str(self.scp_port),
+            f'{self.scp_username}@{self.scp_host}',
+            f'sudo -u {sudo_target_user} cp /dev/stdin {self.remote_path}'
+        ]
+
+        try:
+            with subprocess.Popen(scp_command, stdin=subprocess.PIPE) as scp_proc:
+                sudo_proc = subprocess.Popen(sudo_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                sudo_output, _ = sudo_proc.communicate(input=f'{self.sudo_password}\n'.encode())
+                with open(local_file, 'rb') as file:
+                    scp_proc.communicate(input=file.read())
+
+            self.logger.info(f"File {local_file} successfully transferred to {self.scp_host}:{self.remote_path} with sudo")
+        except Exception as e:
+            self.logger.error(f"Error during SCP transfer with sudo: {e}")
+
+    # ... (previous code remains unchanged)
+
+# Usage
+lookup_transfer = LookupFileTransfer(proxy={'http': 'http://your_proxy_url', 'https': 'https://your_proxy_url'})
+lookup_transfer.run()
