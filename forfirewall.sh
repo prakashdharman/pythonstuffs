@@ -21,7 +21,7 @@ while read -r line; do
     hostname=$(echo "$line" | awk '{$1=""; print $0}')
     
     # Print IP and hostname in desired format
-    echo -n "$ip ($hostname)"
+    echo -n "$ip ($hostname) "
 done < "$filename"
 
 # Print a newline character at the end
