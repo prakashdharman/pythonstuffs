@@ -291,3 +291,61 @@ if __name__ == "__main__":
     main()
 
 
+
+
+
+import openpyxl
+import socket
+import ssl
+
+# TCP server configuration
+TCP_HOST = '127.0.0.1'
+TCP_PORT = 8888
+
+def stream_data_to_tcp(data, tcp_host, tcp_port):
+    try:
+        # Create a TCP socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        # Wrap the socket with SSL
+        ssl_socket = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLS)
+        
+        # Connect to the TCP server
+        ssl_socket.connect((tcp_host, tcp_port))
+        
+        # Send data
+        ssl_socket.sendall(data.encode())
+        
+        # Close the connection
+        ssl_socket.close()
+    except Exception as e:
+        print("Error:", e)
+
+def main():
+    xlsx_file = 'data.xlsx'  # Path to the Excel file
+    sheet_name = 'Sheet1'    # Name of the sheet
+    column_letter = 'C'      # Letter of the column (e.g., 'A', 'B', 'C', etc.)
+    
+    try:
+        # Open the XLSX file
+        workbook = openpyxl.load_workbook(xlsx_file)
+        sheet = workbook[sheet_name]
+        
+        # Iterate through each row and extract data from the specified column
+        for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header row
+            data = row[sheet[f"{column_letter}1"].column - 1]
+            
+            # Stream data over TLS to TCP server
+            stream_data_to_tcp(str(data), TCP_HOST, TCP_PORT)
+            
+            # Optional: You can add a delay between sending each data
+            # time.sleep(1)
+    except FileNotFoundError:
+        print(f"File '{xlsx_file}' not found.")
+    except Exception as e:
+        print("Error:", e)
+
+if __name__ == "__main__":
+    main()
+
+
