@@ -344,6 +344,84 @@ def main():
         print(f"File '{xlsx_file}' not found.")
     except Exception as e:
         print("Error:", e)
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+# all at once
+
+import openpyxl
+import socket
+import ssl
+
+# TCP server configuration
+TCP_HOST = '127.0.0.1'
+TCP_PORT = 8888
+
+def stream_data_to_tcp(data, tcp_socket):
+    try:
+        # Send data in chunks with chunked transfer encoding
+        chunk_size = 1024
+        for i in range(0, len(data), chunk_size):
+            chunk = data[i:i+chunk_size]
+            response = f"{len(chunk):X}\r\n{chunk}\r\n"
+            tcp_socket.sendall(response.encode())
+        
+        # Signal end of transmission
+        tcp_socket.sendall(b"0\r\n\r\n")
+    except Exception as e:
+        print("Error:", e)
+
+def main():
+    xlsx_file = 'data.xlsx'  # Path to the Excel file
+    sheet_name = 'Sheet1'    # Name of the sheet
+    column_letter = 'C'      # Letter of the column (e.g., 'A', 'B', 'C', etc.)
+    
+    try:
+        # Open the XLSX file
+        workbook = openpyxl.load_workbook(xlsx_file)
+        sheet = workbook[sheet_name]
+        
+        # Prepare all data to be streamed
+        all_data = ""
+        for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header row
+            data = row[sheet[f"{column_letter}1"].column - 1]
+            all_data += str(data) + "\n"  # Add newline delimiter between events
+        
+        # Create a TCP socket
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        # Bind the socket to the address and port
+        server_socket.bind((TCP_HOST, TCP_PORT))
+        
+        # Listen for incoming connections
+        server_socket.listen(5)
+        print(f"Listening on {TCP_HOST}:{TCP_PORT}...")
+        
+        while True:
+            # Accept incoming connection
+            client_socket, addr = server_socket.accept()
+            print(f"Accepted connection from {addr[0]}:{addr[1]}")
+            
+            # Wrap the socket with SSL
+            ssl_socket = ssl.wrap_socket(client_socket, server_side=True, certfile="server.crt", keyfile="server.key", ssl_version=ssl.PROTOCOL_TLS)
+            
+            # Stream all data to TCP client
+            stream_data_to_tcp(all_data, ssl_socket)
+            
+            # Close the SSL socket
+            ssl_socket.close()
+        
+        # Close the server socket
+        server_socket.close()
+    
+    except FileNotFoundError:
+        print(f"File '{xlsx_file}' not found.")
+    except Exception as e:
+        print("Error:", e)
 
 if __name__ == "__main__":
     main()
