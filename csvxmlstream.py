@@ -425,3 +425,53 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+############
+
+
+import openpyxl
+import socket
+import ssl
+
+def main():
+    xlsx_file = 'data.xlsx'  # Path to the Excel file
+    sheet_name = 'Sheet1'    # Name of the sheet
+    column_letter = 'C'      # Letter of the column (e.g., 'A', 'B', 'C', etc.)
+    server_host = '127.0.0.1'  # TCP server host
+    server_port = 8888  # TCP server port
+    
+    try:
+        # Open the XLSX file
+        workbook = openpyxl.load_workbook(xlsx_file)
+        sheet = workbook[sheet_name]
+        
+        # Create a TCP socket
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        # Connect to the TCP server
+        client_socket.connect((server_host, server_port))
+        
+        # Wrap the socket with SSL
+        ssl_socket = ssl.wrap_socket(client_socket, ssl_version=ssl.PROTOCOL_TLS)
+        
+        # Stream each line of data from the Excel sheet as a separate event
+        for row in sheet.iter_rows(min_row=2, values_only=True):  # Skip header row
+            data = row[sheet[f"{column_letter}1"].column - 1]
+            event_data = str(data) + "\n"  # Add newline delimiter between events
+            
+            # Stream event data to the TCP server
+            ssl_socket.sendall(event_data.encode())
+        
+        # Close the SSL socket
+        ssl_socket.close()
+        print("Data streaming completed.")
+    
+    except FileNotFoundError:
+        print(f"File '{xlsx_file}' not found.")
+    except Exception as e:
+        print("Error:", e)
+
+if __name__ == "__main__":
+    main()
