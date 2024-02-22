@@ -71,6 +71,10 @@ import subprocess
 import socket
 import time
 
+# SSH username and path to the SSH private key
+ssh_username = "your_username"
+ssh_key_path = "/path/to/your/private/key"
+
 # Define your server IP addresses and port
 servers = [('server1_ip', 8089), ('server2_ip', 8089), ('server3_ip', 8089), ('server4_ip', 8089), ('server5_ip', 8089)]
 
@@ -92,13 +96,18 @@ def main():
     
     for destination_server, port in servers:
         if destination_server != current_server:
-            ssh_command = f'ssh {destination_server} python -c "import socket; \
+            ssh_command = f'ssh -i {ssh_key_path} {ssh_username}@{destination_server} python -c "import socket; \
                             sock = socket.create_connection(('{destination_server}', {port}), timeout=5); \
                             sock.close()"'
 
             try:
                 subprocess.check_call(ssh_command, shell=True)
             except subprocess.CalledProcessError:
+                log_failure(current_server, destination_server)
+
+if __name__ == "__main__":
+    main()
+
                 log_failure(current_server, destination_server)
 
 if __name__ == "__main__":
