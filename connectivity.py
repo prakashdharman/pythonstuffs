@@ -96,9 +96,11 @@ def main():
     
     for destination_server, port in servers:
         if destination_server != current_server:
-            ssh_command = f'ssh -i {ssh_key_path} {ssh_username}@{destination_server} python -c "import socket; \
-                            sock = socket.create_connection(('{destination_server}', {port}), timeout=5); \
-                            sock.close()"'
+            ssh_command = f'ssh -i {ssh_key_path} {ssh_username}@{destination_server} "python -c \\"import socket; \
+                            sock = socket.create_connection((\'{destination_server}\', {port}), timeout=5); \
+                            sock.close()\\""'
+
+                            
 
             try:
                 subprocess.check_call(ssh_command, shell=True)
