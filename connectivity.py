@@ -28,3 +28,38 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+## Check the connection between hosts
+
+import socket
+import time
+
+# Define your server IP addresses
+servers = ['server1_ip', 'server2_ip', 'server3_ip', 'server4_ip', 'server5_ip']
+
+def check_connectivity(server_ip, port):
+    try:
+        # Attempt to create a socket connection to the server
+        socket.create_connection((server_ip, port), timeout=5)
+        return True  # Connection successful
+    except Exception as e:
+        return False  # Connection failed
+
+def log_failure(server_ip):
+    with open('connectivity_logs.txt', 'a') as f:
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        f.write(f"[{timestamp}] Failed to connect to server {server_ip} on port 8089\n")
+
+def main():
+    while True:
+        for server_ip in servers:
+            if not check_connectivity(server_ip, 8089):
+                log_failure(server_ip)
+        time.sleep(60)  # Check every 60 seconds
+
+if __name__ == "__main__":
+    main()
