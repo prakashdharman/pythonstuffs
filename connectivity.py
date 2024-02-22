@@ -63,3 +63,43 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+## more detailed and running from central server
+
+import subprocess
+import socket
+import time
+
+# Define your server IP addresses and port
+servers = [('server1_ip', 8089), ('server2_ip', 8089), ('server3_ip', 8089), ('server4_ip', 8089), ('server5_ip', 8089)]
+
+def check_connectivity(server_ip, port):
+    try:
+        # Attempt to create a socket connection to the server
+        with socket.create_connection((server_ip, port), timeout=5) as sock:
+            return True  # Connection successful
+    except Exception as e:
+        return False  # Connection failed
+
+def log_failure(source_server, destination_server):
+    with open('connectivity_logs.txt', 'a') as f:
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        f.write(f"[{timestamp}] Failed to connect from {source_server} to {destination_server} on port 8089\n")
+
+def main():
+    current_server = socket.gethostname()  # Get the current server's hostname
+    
+    for destination_server, port in servers:
+        if destination_server != current_server:
+            ssh_command = f'ssh {destination_server} python -c "import socket; \
+                            sock = socket.create_connection(('{destination_server}', {port}), timeout=5); \
+                            sock.close()"'
+
+            try:
+                subprocess.check_call(ssh_command, shell=True)
+            except subprocess.CalledProcessError:
+                log_failure(current_server, destination_server)
+
+if __name__ == "__main__":
+    main()
