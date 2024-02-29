@@ -1,3 +1,7 @@
-| rest /servicesNS/-/-/data/props/extractions 
-| search eai:dataModelLookup=true
-| table title, data_model, size
+| rest /servicesNS/-/-/saved/searches splunk_server=local count=0 
+| search eai:acl.app="search" AND is_scheduled=0
+| rex field=actions "\/rest.*?/data/lookup-table-files/(?<lookup_file>[^/\s]+)\s"
+| stats sum(size) as total_size by title, lookup_file
+| sort - total_size
+| eval total_size_kb = round(total_size / 1024, 2)
+| table title, lookup_file, total_size_kb
