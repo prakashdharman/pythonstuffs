@@ -5,3 +5,9 @@
 | sort - total_size
 | eval total_size_kb = round(total_size / 1024, 2)
 | table title, lookup_file, total_size_kb
+
+
+| rest /services/data/lookup-table-files splunk_server=local count=0
+| stats sum(size) as total_size by title
+| eval total_size_kb = round(total_size / 1024, 2)
+| table title, total_size_kb
