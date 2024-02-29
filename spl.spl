@@ -1,0 +1,3 @@
+| rest /servicesNS/-/-/data/props/extractions 
+| search eai:dataModelLookup=true
+| table title, data_model, size
