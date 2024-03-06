@@ -5,7 +5,7 @@ def collect_pstack(pid, samples, interval):
     filename = f"pstack_pid_{pid}.txt"
     with open(filename, "w") as f:
         for i in range(samples):
-            pstack_output = subprocess.run(["pstack", str(pid)], capture_output=True, text=True)
+            pstack_output = subprocess.run(["pstack", str(pid)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             f.write(f"Sample {i+1}:\n{pstack_output.stdout}\n")
             time.sleep(interval)
 
