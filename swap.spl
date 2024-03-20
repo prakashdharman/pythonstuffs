@@ -1,0 +1,1 @@
+index=<your_index> | eval latency=_indextime-_time | stats avg(latency) as AvgLatency, max(latency) as MaxLatency
