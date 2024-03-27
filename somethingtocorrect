@@ -1,0 +1,10 @@
+Telegraf agents installed within Splunk heavy forwarders are configured with the SNMP plugin to serve as trap receivers, facilitating the collection of SNMP data from devices
+
+The Telegraf agents are configured to function as SNMP agents, receiving SNMP traps and forwarding them to Splunk indexers. These Telegraf agents, deployed on servers, receive traps from various sources, translate them using a loaded MIBS database, and stream them to Splunk as HEC events through HEC receivers
+
+
+Telegraf agents are utilized to collect SNMP traps, providing a comprehensive solution for monitoring SNMP data from devices.
+These agents are configured within Splunk heavy forwarders to capture SNMP events and translate them using a MIBs database. Communication initiates from the monitored device's SNMP agent, which sends status messages to a trap receiver.
+The receivers actively listen and translate these traps into HEC events, streaming them to Splunk's HTTP Event Collectors.
+Both SNMP v2c and v3 are supported versions, with SNMP v3 being the default choice. In cases where devices are incompatible with SNMP v3, SNMP v2c can be utilized.
+SNMP v3 employs authentication using a secret name, authentication key, and private key. Each event source receives unique credentials, and encryptions are carried out using the authentication protocol SHA and the algorithm AES
