@@ -1,0 +1,37 @@
+import requests
+
+# Replace these variables with your Splunk HEC URL and token
+hec_url = "https://your_splunk_hec_url:8088/services/collector/event"
+hec_token = "your_hec_token"
+
+# Generate a payload exceeding 102400 bytes
+payload = "A" * 102401
+
+# Send the payload to HEC
+def send_payload_to_hec(payload):
+    headers = {
+        "Authorization": f"Splunk {hec_token}"
+    }
+    data = {
+        "event": payload
+    }
+
+    response = requests.post(hec_url, headers=headers, json=data)
+    return response
+
+# Main function
+def main():
+    print("Sending payload to Splunk HEC...")
+    response = send_payload_to_hec(payload)
+    print("Response code:", response.status_code)
+    print("Response content:", response.content)
+
+if __name__ == "__main__":
+    main()
+
+
+# Generate a payload exceeding 102400 bytes
+payload = "A" * 102401
+
+# Print the length of the payload
+print("Length of payload:", len(payload), "bytes")
