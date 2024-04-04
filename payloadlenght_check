@@ -35,3 +35,20 @@ payload = "A" * 102401
 
 # Print the length of the payload
 print("Length of payload:", len(payload), "bytes")
+
+
+
+#!/bin/bash
+
+# Replace these variables with your Splunk HEC URL and token
+hec_url="https://your_splunk_hec_url:8088/services/collector/event"
+hec_token="your_hec_token"
+
+# Generate a payload exceeding 102400 bytes
+payload=$(printf '=%.0s' {1..102401})
+
+# Send the payload to HEC
+response=$(curl -X POST -H "Authorization: Splunk $hec_token" -H "Content-Type: application/json" -d '{"event": "'"$payload"'"}' $hec_url)
+
+# Print the response
+echo "Response: $response"
