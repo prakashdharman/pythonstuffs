@@ -47,3 +47,29 @@ for i in range(5):
 
 # Close the TCP handler (there's no need to close console handler)
 logger.removeHandler(tcp_handler)
+
+
+
+
+import socket
+
+def send_test_message(host, port, message):
+    try:
+        # Create a TCP socket
+        tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        # Connect to the TCP listener
+        tcp_socket.connect((host, port))
+        
+        # Send the test message over the socket
+        tcp_socket.sendall(message.encode())
+        
+        # Close the TCP socket
+        tcp_socket.close()
+        print("Test message sent successfully.")
+    except Exception as e:
+        print("Error while sending test message:", e)
+
+# Example usage: Replace 'localhost', 9999, and "Test message" with your desired host, port, and message.
+send_test_message('localhost', 9999, "Test message")
+
