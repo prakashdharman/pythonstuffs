@@ -73,3 +73,6 @@ def send_test_message(host, port, message):
 # Example usage: Replace 'localhost', 9999, and "Test message" with your desired host, port, and message.
 send_test_message('localhost', 9999, "Test message")
 
+
+
+"import socket; sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM); sock.connect(('localhost', 9999)); sock.sendall(b'Test message'); sock.close()"
