@@ -2,7 +2,7 @@ import logging
 import socket
 import time
 
-def log_to_tcp(host, port, message):
+def log_to_tcp(host, port, record):
     try:
         # Create a TCP socket
         tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -11,7 +11,7 @@ def log_to_tcp(host, port, message):
         tcp_socket.connect((host, port))
         
         # Send the log message over the socket
-        tcp_socket.sendall(message.encode())
+        tcp_socket.sendall(record.encode())
         
         # Close the TCP socket
         tcp_socket.close()
@@ -27,12 +27,11 @@ host = 'localhost'
 port = 9999
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-def log_tcp(message):
-    log_to_tcp(host, port, message)
+def log_tcp(record):
+    log_to_tcp(host, port, formatter.format(record))
 
 tcp_handler = logging.StreamHandler()
 tcp_handler.emit = log_tcp
-tcp_handler.setFormatter(formatter)
 logger.addHandler(tcp_handler)
 
 # Create a console handler
