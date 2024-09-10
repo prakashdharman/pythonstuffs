@@ -53,3 +53,35 @@ if __name__ == "__main__":
     for commit in commits:
         print(f"Commit: {commit['hash']}")
         print(f"Message: {commit['message']}\n")
+
+
+import subprocess
+import csv
+import os
+
+def generate_git_log_csv(repo_path, output_csv):
+    # Change to the specified directory
+    os.chdir(repo_path)
+    
+    # Run the git log command
+    result = subprocess.run(
+        ["git", "log", "--since='7 days ago'", "--pretty=format:%ad,%s", "--date=iso"],
+        capture_output=True,
+        text=True
+    )
+    
+    # Split the output into lines
+    log_lines = result.stdout.strip().split('\n')
+    
+    # Write the log lines to a CSV file
+    with open(output_csv, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Date", "Commit Message"])
+        for line in log_lines:
+            writer.writerow(line.split(',', 1))
+
+# Example usage
+repo_path = "/path/to/your/repo"
+output_csv = "commits_last_7_days.csv"
+generate_git_log_csv(repo_path, output_csv)
+
