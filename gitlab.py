@@ -318,6 +318,7 @@ import re
 import logging
 import sys
 import platform
+from glob import glob
 
 # Author and version information
 __author__ = "Your Name"
@@ -343,6 +344,7 @@ def clean_date(date_str):
 
 def git_pull(repo_path):
     """Performs a git pull to update the local repository."""
+    os.chdir(repo_path)  # Change to the repository directory
     logging.info(f"Running 'git pull' for repository: {repo_path}")
     result = subprocess.run(["git", "pull"], cwd=repo_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     
@@ -353,6 +355,8 @@ def git_pull(repo_path):
 
 def check_if_up_to_date(repo_path):
     """Verifies if the local repository is up-to-date with the remote."""
+    os.chdir(repo_path)  # Change to the repository directory
+    
     # Get the current local commit hash
     local_hash = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=repo_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
@@ -367,6 +371,29 @@ def check_if_up_to_date(repo_path):
         logging.info("The local repository is up-to-date with the remote.")
     else:
         logging.warning("The local repository is NOT up-to-date with the remote.")
+
+def rotate_logs(output_log_path, max_backups=5):
+    """Rotates the logs by keeping up to `max_backups` and removing older logs."""
+    log_base = output_log_path
+    log_files = sorted(glob(f"{log_base}.*"), reverse=True)
+
+    # Remove the oldest log if more than `max_backups` files exist
+    if len(log_files) >= max_backups:
+        oldest_log = log_files[0]
+        os.remove(oldest_log)
+        logging.info(f"Removed oldest log: {oldest_log}")
+
+    # Shift the other backups by renaming them
+    for i in range(len(log_files)):
+        current_log = log_files[i]
+        next_log = f"{log_base}.{i+2}"
+        os.rename(current_log, next_log)
+        logging.info(f"Rotated log: {current_log} -> {next_log}")
+
+    # Rename the current log to .1 for backup
+    if os.path.exists(output_log_path):
+        os.rename(output_log_path, f"{output_log_path}.1")
+        logging.info(f"Rotated current log to: {output_log_path}.1")
 
 def generate_git_log_file(repo_path, output_log_path):
     # Check if the repository path exists
@@ -387,7 +414,10 @@ def generate_git_log_file(repo_path, output_log_path):
         # Check if the local repository is up-to-date with the remote
         check_if_up_to_date(repo_path)
         
-        # Change to the specified directory
+        # Rotate logs before creating a new one
+        rotate_logs(output_log_path, max_backups=5)
+        
+        # Change to the specified directory before running git commands
         os.chdir(repo_path)
         
         # Run the git log command, adding %an to get the author name
@@ -441,4 +471,3 @@ repos = [
 ]
 
 generate_reports(repos, output_directory)
-
