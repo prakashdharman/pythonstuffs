@@ -37,3 +37,10 @@
 
   </root>
 </mxGraphModel>
+
+
+
+       (master)   ----●----●----●----●----
+                     |          |
+                     |          PR/Merge
+                 (feature) ----●----●
