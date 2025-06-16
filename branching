@@ -1,36 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mxGraphModel dx="1282" dy="803" grid="1" gridSize="10" guides="1">
+<mxGraphModel dx="831" dy="454" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169">
   <root>
-    <mxCell id="0"/>
-    <mxCell id="1" parent="0"/>
-
-    <!-- Main Branch -->
-    <mxCell id="2" value="Main" style="rounded=1;fillColor=#007acc;fontColor=#ffffff;" vertex="1" parent="1">
-      <mxGeometry x="100" y="100" width="100" height="40" as="geometry"/>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    
+    <!-- Master Branch -->
+    <mxCell id="2" value="Master" style="rounded=1;fillColor=#0000FF;fontColor=#FFFFFF;" vertex="1" parent="1">
+      <mxGeometry x="50" y="100" width="100" height="40" as="geometry" />
     </mxCell>
-
-    <!-- Develop Branch -->
-    <mxCell id="3" value="Develop" style="rounded=1;fillColor=#009933;fontColor=#ffffff;" vertex="1" parent="1">
-      <mxGeometry x="100" y="200" width="100" height="40" as="geometry"/>
-    </mxCell>
-
+    
     <!-- Feature Branch -->
-    <mxCell id="4" value="Feature" style="rounded=1;fillColor=#cc6600;fontColor=#ffffff;" vertex="1" parent="1">
-      <mxGeometry x="100" y="300" width="100" height="40" as="geometry"/>
-    </mxCell>
-
-    <!-- Arrows Connecting Branches -->
-    <mxCell id="5" edge="1" parent="1" source="2" target="3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;">
-      <mxGeometry relative="1" as="geometry"/>
+    <mxCell id="3" value="Feature Branch" style="rounded=1;fillColor=#008000;fontColor=#FFFFFF;" vertex="1" parent="1">
+      <mxGeometry x="50" y="200" width="120" height="40" as="geometry" />
     </mxCell>
     
-    <mxCell id="6" edge="1" parent="1" source="3" target="4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;">
-      <mxGeometry relative="1" as="geometry"/>
-    </mxCell>
-
-    <mxCell id="7" edge="1" parent="1" source="4" target="3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;">
-      <mxGeometry relative="1" as="geometry"/>
+    <!-- Commit -->
+    <mxCell id="4" value="Commit 1" style="ellipse;fillColor=#FF0000;fontColor=#FFFFFF;" vertex="1" parent="1">
+      <mxGeometry x="180" y="100" width="40" height="40" as="geometry" />
     </mxCell>
     
+    <!-- Commit on Feature Branch -->
+    <mxCell id="5" value="Commit 2" style="ellipse;fillColor=#FF0000;fontColor=#FFFFFF;" vertex="1" parent="1">
+      <mxGeometry x="180" y="200" width="40" height="40" as="geometry" />
+    </mxCell>
+    
+    <!-- Merge -->
+    <mxCell id="6" value="Merge" style="ellipse;fillColor=#FFA500;fontColor=#FFFFFF;" vertex="1" parent="1">
+      <mxGeometry x="300" y="100" width="60" height="40" as="geometry" />
+    </mxCell>
+    
+    <!-- Connections -->
+    <mxCell id="7" edge="1" parent="1" source="2" target="4" />
+    <mxCell id="8" edge="1" parent="1" source="3" target="5" />
+    <mxCell id="9" edge="1" parent="1" source="5" target="6" />
+    <mxCell id="10" edge="1" parent="1" source="4" target="6" />
+
   </root>
 </mxGraphModel>
