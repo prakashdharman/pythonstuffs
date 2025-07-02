@@ -29,12 +29,15 @@ CORE_DIR="$USER_DIR/core"
 echo "Creating user folder: $USER_DIR"
 mkdir -p "$USER_DIR"
 
-# Clone Onboarding Repo from master, create user branch, push it
+# Clone Onboarding Repo from master, pull LFS objects, create user branch, push it
 echo "Cloning Onboarding Repo..."
 git clone --branch "$ONBOARDING_BASE_BRANCH" "$ONBOARDING_REPO_URL" "$ONBOARDING_DIR"
 
-echo "Creating new branch '$USERNAME' in onboarding repo..."
+echo "Fetching Git LFS objects..."
 cd "$ONBOARDING_DIR"
+git lfs pull
+
+echo "Creating new branch '$USERNAME' in onboarding repo..."
 git checkout -b "$USERNAME"
 git push -u origin "$USERNAME"
 
