@@ -1,0 +1,37 @@
+#!/bin/bash
+
+# Configuration
+BASE_DIR="/opt/mgr/users"
+ONBOARDING_REPO_URL="https://your.git.server/org/onb.git"
+CORE_REPO_URL="https://your.git.server/org/c.git"
+TARGET_BRANCH="develop"
+
+# ----
+
+# Check if username was passed as argument
+if [ -n "$1" ]; then
+    USERNAME="$1"
+else
+    read -rp "Enter the username: " USERNAME
+    if [ -z "$USERNAME" ]; then
+        echo "Error: Username cannot be empty."
+        exit 1
+    fi
+fi
+
+USER_DIR="$BASE_DIR/$USERNAME"
+
+echo "Creating user folder: $USER_DIR"
+mkdir -p "$USER_DIR"
+
+echo "Cloning Onboarding Repo..."
+git clone "$ONBOARDING_REPO_URL" "$USER_DIR/onboarding"
+
+echo "Cloning Core Repo..."
+git clone "$CORE_REPO_URL" "$USER_DIR/core"
+
+echo "Checking out development branches..."
+cd "$USER_DIR/onboarding" && git checkout "$TARGET_BRANCH"
+cd "$USER_DIR/core" && git checkout "$TARGET_BRANCH"
+
+echo "Done. Repositories cloned and checked out to '$TARGET_BRANCH' for user '$USERNAME'."
