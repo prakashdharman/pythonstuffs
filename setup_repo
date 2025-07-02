@@ -7,7 +7,17 @@ BASE_DIR="/opt/mgr/users"
 ONBOARDING_REPO_URL="https://your.git.server/org/onb.git"
 CORE_REPO_URL="https://your.git.server/org/c.git"
 ONBOARDING_BASE_BRANCH="master"
-CORE_BRANCH="develop"
+CORE_BASE_BRANCH="master"  # core cloned from master
+
+# Your commit-msg hook content (edit this as needed)
+read -r -d '' COMMIT_MSG_HOOK << 'EOF'
+#!/bin/sh
+# Example commit-msg hook: reject commits with empty message
+if test -z "$(cat "$1")"; then
+  echo "Aborting commit: empty commit message is not allowed." >&2
+  exit 1
+fi
+EOF
 
 # ----
 
@@ -26,23 +36,60 @@ USER_DIR="$BASE_DIR/$USERNAME"
 ONBOARDING_DIR="$USER_DIR/onboarding"
 CORE_DIR="$USER_DIR/core"
 
-echo "Creating user folder: $USER_DIR"
+echo "Preparing user folder: $USER_DIR"
 mkdir -p "$USER_DIR"
 
-# Clone Onboarding Repo from master, pull LFS objects, create user branch, push it
-echo "Cloning Onboarding Repo..."
-git clone --branch "$ONBOARDING_BASE_BRANCH" "$ONBOARDING_REPO_URL" "$ONBOARDING_DIR"
+update_or_clone_repo() {
+    local repo_dir=$1
+    local repo_url=$2
+    local base_branch=$3
 
-echo "Fetching Git LFS objects..."
-cd "$ONBOARDING_DIR"
-git lfs pull
+    if [ -d "$repo_dir/.git" ]; then
+        echo "Repo at $repo_dir exists. Updating..."
+        cd "$repo_dir"
+        git fetch origin
+        git checkout "$base_branch"
+        git pull origin "$base_branch"
+        echo "Pulling Git LFS objects..."
+        git lfs pull
+    else
+        echo "Cloning repo $repo_url into $repo_dir..."
+        git clone --branch "$base_branch" "$repo_url" "$repo_dir"
+        cd "$repo_dir"
+        echo "Pulling Git LFS objects..."
+        git lfs pull
+    fi
+}
 
-echo "Creating new branch '$USERNAME' in onboarding repo..."
-git checkout -b "$USERNAME"
-git push -u origin "$USERNAME"
+create_or_checkout_branch() {
+    local repo_dir=$1
+    local branch_name=$2
+    local hook_content=$3
 
-# Clone Core Repo and checkout develop
-echo "Cloning Core Repo..."
-git clone --branch "$CORE_BRANCH" "$CORE_REPO_URL" "$CORE_DIR"
+    cd "$repo_dir"
+    if git show-ref --verify --quiet "refs/heads/$branch_name"; then
+        git checkout "$branch_name"
+    else
+        if git ls-remote --exit-code --heads origin "$branch_name" >/dev/null; then
+            git checkout -b "$branch_name" "origin/$branch_name"
+        else
+            git checkout -b "$branch_name"
+            git push -u origin "$branch_name"
+        fi
+    fi
 
-echo "Done. Onboarding repo on '$USERNAME' branch, Core repo on '$CORE_BRANCH', for user '$USERNAME'."
+    # Add commit-msg hook silently
+    local hook_path="$repo_dir/.git/hooks/commit-msg"
+    printf '%s\n' "$hook_content" > "$hook_path"
+    chmod +x "$hook_path"
+}
+
+echo "Processing onboarding repo..."
+update_or_clone_repo "$ONBOARDING_DIR" "$ONBOARDING_REPO_URL" "$ONBOARDING_BASE_BRANCH"
+create_or_checkout_branch "$ONBOARDING_DIR" "$USERNAME" "$COMMIT_MSG_HOOK"
+
+echo "Processing core repo..."
+update_or_clone_repo "$CORE_DIR" "$CORE_REPO_URL" "$CORE_BASE_BRANCH"
+create_or_checkout_branch "$CORE_DIR" "$USERNAME" "$COMMIT_MSG_HOOK"
+
+echo "Done. Both repos are on branch '$USERNAME' with commit-msg hook installed."
