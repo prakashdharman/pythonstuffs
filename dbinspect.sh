@@ -36,6 +36,13 @@ for index in $(ls "$SPLUNK_DB"); do
 
     echo "Archived $bucket_name from $index"
   done
+
+
+
+  | dbinspect index=<your_index>
+| eval startTime=strftime(startEpoch, "%Y-%m-%d %H:%M:%S")
+| eval endTime=strftime(endEpoch, "%Y-%m-%d %H:%M:%S")
+| table bucketId, index, startTime, endTime, eventCount, sizeOnDiskMB
 done
 
 echo "✅ Archive complete. Manifest saved to $MANIFEST"
