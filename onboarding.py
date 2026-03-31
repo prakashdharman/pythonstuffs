@@ -55,10 +55,10 @@ class SplunkOnboarding:
             raise ValueError("Invalid retention value")
 
         if self.syslog and not self.port:
-            raise ValueError("Port required for syslog")
+            raise ValueError("Port required when syslog is enabled")
 
     # -----------------------------
-    # Internal helpers
+    # Helpers
     # -----------------------------
     def _build_index_name(self):
         return f"appl_{self.app_code}_{self.env}_{self.add_info}"
@@ -75,10 +75,12 @@ class SplunkOnboarding:
         return "720GB"
 
     def _get_input_path(self):
-        return f"udp://{self.port}" if self.syslog else "monitor://"
+        if self.syslog:
+            return f"udp://{self.port}"
+        return "monitor://"
 
     # -----------------------------
-    # Config generators
+    # Config Generators
     # -----------------------------
     def generate_index_conf(self):
         return f"""{self.header}
@@ -117,48 +119,20 @@ srchIndexesDefault = {self.index_name}
 srchFilter = index::{self.index_name}
 """
 
+    def generate_authentication(self):
+        return f"""{self.header}
+{self.index_name} = sec-splunk-appl-{self.app_code}-{self.env}-{self.add_info}
+"""
+
     def generate_meta(self):
-        return f"""[]
+        return """[]
 access = read : [ * ], write : [ admin ]
 export = system
 """
 
     # -----------------------------
-    # File writer
+    # Print Output
     # -----------------------------
-    def create_app_structure(self):
-        app_root = os.path.join(self.base_output_dir, self.app_name)
-
-        paths = {
-            "local": os.path.join(app_root, "local"),
-            "default": os.path.join(app_root, "default"),
-            "metadata": os.path.join(app_root, "metadata"),
-        }
-
-        # Create directories
-        for path in paths.values():
-            os.makedirs(path, exist_ok=True)
-
-        # Write files
-        files = {
-            os.path.join(paths["default"], "indexes.conf"): self.generate_index_conf(),
-            os.path.join(paths["local"], "inputs.conf"): self.generate_inputs_conf(),
-            os.path.join(paths["default"], "serverclass.conf"): self.generate_serverclass(),
-            os.path.join(paths["default"], "authorize.conf"): self.generate_authorize(),
-            os.path.join(paths["metadata"], "local.meta"): self.generate_meta(),
-        }
-
-        for filepath, content in files.items():
-            with open(filepath, "w") as f:
-                f.write(content)
-
-        return app_root
-        
-    def generate_authentication(self):
-        return f"""{self.header}
-        {self.index_name} = sec-splunk-appl-{self.app_code}-{self.env}-{self.add_info}
-        """ 
-
     def print_all(self):
         print("\n===== INDEXES.CONF =====")
         print(self.generate_index_conf())
@@ -172,12 +146,71 @@ export = system
         print("\n===== AUTHORIZE.CONF =====")
         print(self.generate_authorize())
 
-        print("\n===== METADATA (local.meta) =====")
-        print(self.generate_meta())
+        print("\n===== AUTHENTICATION.CONF =====")
+        print(self.generate_authentication())
+
+    # -----------------------------
+    # Write to Single File
+    # -----------------------------
+    def write_to_single_file(self):
+        os.makedirs(self.base_output_dir, exist_ok=True)
+
+        file_path = os.path.join(self.base_output_dir, f"{self.crq}.txt")
+
+        content = f"""===== INDEXES.CONF =====
+{self.generate_index_conf()}
+
+===== INPUTS.CONF =====
+{self.generate_inputs_conf()}
+
+===== SERVERCLASS.CONF =====
+{self.generate_serverclass()}
+
+===== AUTHORIZE.CONF =====
+{self.generate_authorize()}
+
+===== AUTHENTICATION.CONF =====
+{self.generate_authentication()}
+"""
+
+        with open(file_path, "w") as f:
+            f.write(content.strip())
+
+        return file_path
+
+    # -----------------------------
+    # Optional: Create App Structure
+    # -----------------------------
+    def create_app_structure(self):
+        app_root = os.path.join(self.base_output_dir, self.app_name)
+
+        paths = {
+            "local": os.path.join(app_root, "local"),
+            "default": os.path.join(app_root, "default"),
+            "metadata": os.path.join(app_root, "metadata"),
+        }
+
+        for path in paths.values():
+            os.makedirs(path, exist_ok=True)
+
+        files = {
+            os.path.join(paths["default"], "indexes.conf"): self.generate_index_conf(),
+            os.path.join(paths["local"], "inputs.conf"): self.generate_inputs_conf(),
+            os.path.join(paths["default"], "serverclass.conf"): self.generate_serverclass(),
+            os.path.join(paths["default"], "authorize.conf"): self.generate_authorize(),
+            os.path.join(paths["default"], "authentication.conf"): self.generate_authentication(),
+            os.path.join(paths["metadata"], "local.meta"): self.generate_meta(),
+        }
+
+        for filepath, content in files.items():
+            with open(filepath, "w") as f:
+                f.write(content)
+
+        return app_root
 
 
 # -----------------------------
-# Example usage
+# Example Usage
 # -----------------------------
 if __name__ == "__main__":
 
@@ -192,6 +225,13 @@ if __name__ == "__main__":
         port=514
     )
 
+    # Print to console
     onboarding.print_all()
-    path = onboarding.create_app_structure()
-    print(f"\nApp created at: {path}")
+
+    # Write single CRQ file
+    file_path = onboarding.write_to_single_file()
+    print(f"\nOutput written to: {file_path}")
+
+    # Optional: create full app structure
+    app_path = onboarding.create_app_structure()
+    print(f"App created at: {app_path}")
