@@ -1,5 +1,6 @@
 import os
 import re
+import argparse
 from datetime import datetime
 
 
@@ -20,6 +21,7 @@ class SplunkOnboarding:
 
     def __init__(self, user, crq, app_code, env, add_info,
                  retention, syslog=False, port=None,
+                 security=False,
                  base_output_dir="output"):
 
         self.user = user
@@ -30,6 +32,7 @@ class SplunkOnboarding:
         self.retention = retention
         self.syslog = syslog
         self.port = port
+        self.security = security
         self.base_output_dir = base_output_dir
 
         self.validate_inputs()
@@ -50,18 +53,19 @@ class SplunkOnboarding:
     def validate_inputs(self):
         if not re.match(r"^CRQ\d{12}$", self.crq):
             raise ValueError("CRQ must be 'CRQ' followed by 12 digits")
-
         if self.retention not in self.RETENTION_MAP:
-            raise ValueError("Invalid retention value")
-
+            raise ValueError(f"Invalid retention. Choose from: {list(self.RETENTION_MAP.keys())}")
         if self.syslog and not self.port:
-            raise ValueError("Port required when syslog is enabled")
+            raise ValueError("Port required when --syslog is used")
 
     # -----------------------------
     # Helpers
     # -----------------------------
     def _build_index_name(self):
-        return f"appl_{self.app_code}_{self.env}_{self.add_info}"
+        base = f"appl_{self.app_code}_{self.env}_{self.add_info}"
+        if self.security:
+            return f"{base}-sec"
+        return base
 
     def _build_header(self):
         return f"# {self.app_code.upper()} {self.env.upper()} {self.crq} {self.initials} {self.date_str}"
@@ -70,14 +74,12 @@ class SplunkOnboarding:
         return self.RETENTION_MAP[self.retention]
 
     def _get_index_size(self):
-        if self.index_name.endswith("-sec") or self.env == "prod":
+        if self.security or self.env == "prod":
             return "4294967296"
         return "720GB"
 
     def _get_input_path(self):
-        if self.syslog:
-            return f"udp://{self.port}"
-        return "monitor://"
+        return f"udp://{self.port}" if self.syslog else "monitor://"
 
     # -----------------------------
     # Config Generators
@@ -124,12 +126,6 @@ srchFilter = index::{self.index_name}
 {self.index_name} = sec-splunk-appl-{self.app_code}-{self.env}-{self.add_info}
 """
 
-    def generate_meta(self):
-        return """[]
-access = read : [ * ], write : [ admin ]
-export = system
-"""
-
     # -----------------------------
     # Print Output
     # -----------------------------
@@ -150,11 +146,10 @@ export = system
         print(self.generate_authentication())
 
     # -----------------------------
-    # Write to Single File
+    # Write to single CRQ file
     # -----------------------------
     def write_to_single_file(self):
         os.makedirs(self.base_output_dir, exist_ok=True)
-
         file_path = os.path.join(self.base_output_dir, f"{self.crq}.txt")
 
         content = f"""===== INDEXES.CONF =====
@@ -178,60 +173,49 @@ export = system
 
         return file_path
 
-    # -----------------------------
-    # Optional: Create App Structure
-    # -----------------------------
-    def create_app_structure(self):
-        app_root = os.path.join(self.base_output_dir, self.app_name)
 
-        paths = {
-            "local": os.path.join(app_root, "local"),
-            "default": os.path.join(app_root, "default"),
-            "metadata": os.path.join(app_root, "metadata"),
-        }
+# -----------------------------
+# CLI Argument Parsing
+# -----------------------------
+def parse_args():
+    parser = argparse.ArgumentParser(description="Splunk Onboarding Generator")
 
-        for path in paths.values():
-            os.makedirs(path, exist_ok=True)
+    parser.add_argument("--user", required=True, help="Username")
+    parser.add_argument("--crq", required=True, help="CRQ number (CRQ + 12 digits)")
+    parser.add_argument("--app", required=True, help="Application code")
+    parser.add_argument("--env", required=True, help="Environment (dev/prod/etc)")
+    parser.add_argument("--info", required=True, help="Additional info")
+    parser.add_argument("--retention", required=True, help="Retention (e.g., 3M, 1Y)")
+    parser.add_argument("--syslog", action="store_true", help="Enable syslog input")
+    parser.add_argument("--port", type=int, help="Port (required if syslog enabled)")
+    parser.add_argument("--security", action="store_true", help="Mark index as security (adds -sec suffix)")
+    parser.add_argument("--output", default="output", help="Output directory")
 
-        files = {
-            os.path.join(paths["default"], "indexes.conf"): self.generate_index_conf(),
-            os.path.join(paths["local"], "inputs.conf"): self.generate_inputs_conf(),
-            os.path.join(paths["default"], "serverclass.conf"): self.generate_serverclass(),
-            os.path.join(paths["default"], "authorize.conf"): self.generate_authorize(),
-            os.path.join(paths["default"], "authentication.conf"): self.generate_authentication(),
-            os.path.join(paths["metadata"], "local.meta"): self.generate_meta(),
-        }
-
-        for filepath, content in files.items():
-            with open(filepath, "w") as f:
-                f.write(content)
-
-        return app_root
+    return parser.parse_args()
 
 
 # -----------------------------
-# Example Usage
+# Main
 # -----------------------------
 if __name__ == "__main__":
+    args = parse_args()
 
     onboarding = SplunkOnboarding(
-        user="john",
-        crq="CRQ123456789012",
-        app_code="billing",
-        env="prod",
-        add_info="sec",
-        retention="3M",
-        syslog=True,
-        port=514
+        user=args.user,
+        crq=args.crq,
+        app_code=args.app,
+        env=args.env,
+        add_info=args.info,
+        retention=args.retention,
+        syslog=args.syslog,
+        port=args.port,
+        security=args.security,
+        base_output_dir=args.output
     )
 
-    # Print to console
+    # Print configs to console
     onboarding.print_all()
 
-    # Write single CRQ file
+    # Write all configs to single CRQ text file
     file_path = onboarding.write_to_single_file()
     print(f"\nOutput written to: {file_path}")
-
-    # Optional: create full app structure
-    app_path = onboarding.create_app_structure()
-    print(f"App created at: {app_path}")
