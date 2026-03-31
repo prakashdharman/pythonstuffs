@@ -153,7 +153,11 @@ export = system
                 f.write(content)
 
         return app_root
-
+        
+    def generate_authentication(self):
+        return f"""{self.header}
+        {self.index_name} = sec-splunk-appl-{self.app_code}-{self.env}-{self.add_info}
+        """ 
 
     def print_all(self):
         print("\n===== INDEXES.CONF =====")
