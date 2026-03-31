@@ -155,6 +155,23 @@ export = system
         return app_root
 
 
+    def print_all(self):
+        print("\n===== INDEXES.CONF =====")
+        print(self.generate_index_conf())
+
+        print("\n===== INPUTS.CONF =====")
+        print(self.generate_inputs_conf())
+
+        print("\n===== SERVERCLASS.CONF =====")
+        print(self.generate_serverclass())
+
+        print("\n===== AUTHORIZE.CONF =====")
+        print(self.generate_authorize())
+
+        print("\n===== METADATA (local.meta) =====")
+        print(self.generate_meta())
+
+
 # -----------------------------
 # Example usage
 # -----------------------------
@@ -171,5 +188,6 @@ if __name__ == "__main__":
         port=514
     )
 
+    onboarding.print_all()
     path = onboarding.create_app_structure()
     print(f"\nApp created at: {path}")
